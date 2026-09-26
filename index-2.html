@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>VÓRTICE — Particle Survival</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;height:100%;overflow:hidden;background:#05060a}
+body{font-family:system-ui,sans-serif;color:#eee;touch-action:none;user-select:none}canvas{position:fixed;inset:0}
+.screen{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:radial-gradient(circle,#43108c44,#05060af5 65%);transition:.3s}
+.hidden{opacity:0!important;visibility:hidden!important;pointer-events:none!important}.menu{width:min(92vw,450px);padding:32px;text-align:center;border:1px solid #ffffff1f;border-radius:28px;background:#0c0e18c9;backdrop-filter:blur(18px);box-shadow:0 30px 100px #000}
+.logo{font-size:clamp(44px,13vw,76px);letter-spacing:.18em;margin:0;background:linear-gradient(90deg,#8fd8ff,#a06cff,#ff8fd0);-webkit-background-clip:text;color:transparent}
+.sub{color:#858ba0;letter-spacing:.15em;text-transform:uppercase;font-size:10px}.desc{color:#a9aec0;font-size:13px;line-height:1.6;margin:14px 0 24px}
+.btn{width:100%;border:0;border-radius:14px;padding:14px;margin-top:9px;color:white;background:linear-gradient(#9a48ff,#5410c0);font-weight:900;letter-spacing:.12em;cursor:pointer}.btn.alt{background:#ffffff0b;border:1px solid #ffffff20}
+.stats{display:flex;justify-content:center;gap:34px;margin-top:20px}.stats b{display:block;font-size:23px;color:#d9c5ff}.stats span{font-size:9px;color:#777e95;letter-spacing:.15em}
+#hud{position:fixed;top:15px;left:50%;transform:translateX(-50%);z-index:10;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;background:#0d0f18b8;border:1px solid #ffffff1f;backdrop-filter:blur(16px)}
+.hi{text-align:center;min-width:65px}.hl{font-size:8px;letter-spacing:.15em;color:#858ba0}.hv{font-weight:900;font-size:14px}.lives{color:#d5b6ff}#pause{width:29px;height:29px;border-radius:9px;border:1px solid #ffffff22;background:#ffffff0b;color:white}
+#panel{position:fixed;top:15px;left:15px;z-index:10;width:230px;padding:12px 14px;border:1px solid #ffffff1f;border-radius:18px;background:#0d0f18b8;backdrop-filter:blur(16px)}
+#panel header{display:flex;justify-content:space-between}#panel h1{font-size:12px;letter-spacing:.28em;margin:0;color:#b98cff}#tog{border:1px solid #ffffff20;background:#ffffff0b;color:white;border-radius:8px}
+#panel.collapsed .body{display:none}.body{display:grid;gap:7px;margin-top:10px}label{font-size:9px;letter-spacing:.14em;color:#8d92a8;display:flex;justify-content:space-between}label span{color:#c8b6ff}
+input{width:100%;accent-color:#9a48ff}.row{display:flex;gap:7px}.act{flex:1;padding:8px;border-radius:9px;border:1px solid #ffffff20;background:#ffffff0b;color:#ddd;font-size:9px;font-weight:800}
+#sw{display:flex;gap:5px}.s{flex:1;aspect-ratio:1;border-radius:7px;border:2px solid #ffffff22}.s.active{border-color:#d8baff;box-shadow:0 0 0 2px #a06cff55}
+#boom{position:fixed;bottom:38px;left:50%;z-index:20;transform:translate(-50%,60px) scale(.8);opacity:0;pointer-events:none;padding:15px 28px;border-radius:999px;border:1px solid #d2a0ff99;background:linear-gradient(#9a48ff,#5410c0);color:#fff;font-weight:950;letter-spacing:.12em;transition:.3s}
+#boom.show{opacity:1;pointer-events:auto;transform:translate(-50%,0) scale(1);animation:p 1.4s infinite}@keyframes p{70%{box-shadow:0 0 0 25px #a06cff00,0 12px 40px #7828ff99}}
+#hint{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);color:#686e84;font-size:9px;letter-spacing:.14em;text-transform:uppercase;z-index:8;white-space:nowrap}
+@media(max-width:600px){#panel{width:190px;left:8px;top:8px}.body{gap:5px}#hud{top:8px}.hi{min-width:55px}.menu{padding:27px 21px}}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="start" class="screen"><div class="menu"><h1 class="logo">VÓRTICE</h1><div class="sub">PARTICLE SURVIVAL GAME</div><div class="desc">Controle o núcleo, desvie das partículas violetas e use a detonação para sobreviver.</div><button class="btn" id="play">⚡ JOGAR</button><div class="stats"><div><b id="best0">0</b><span>RECORDE</span></div><div><b>3</b><span>VIDAS</span></div></div></div></div>
+<div id="over" class="screen hidden"><div class="menu"><div class="sub">FIM DE JOGO</div><h2 id="final" style="font-size:48px;color:#d8c5ff;margin:8px">0</h2><div class="sub">PONTOS</div><div class="stats"><div><b id="best1">0</b><span>RECORDE</span></div><div><b id="tm1">0s</b><span>TEMPO</span></div></div><button class="btn" id="again">↻ JOGAR NOVAMENTE</button><button class="btn alt" id="home">MENU</button></div></div>
+<div id="pauseScreen" class="screen hidden"><div class="menu"><div class="sub">PAUSADO</div><h2 style="color:#d8c5ff">VÓRTICE</h2><button class="btn" id="resume">▶ CONTINUAR</button><button class="btn alt" id="home2">MENU</button></div></div>
+
+<div id="hud"><div class="hi"><div class="hl">PONTOS</div><div class="hv" id="score">0</div></div><div class="hi"><div class="hl">TEMPO</div><div class="hv" id="time">0:00</div></div><div class="hi"><div class="hl">VIDAS</div><div class="hv lives" id="life">● ● ●</div></div><button id="pause">Ⅱ</button></div>
+<div id="panel"><header><h1>VÓRTICE</h1><button id="tog">–</button></header><div class="body"><label>Partículas <span id="cv">800</span></label><input id="count" type="range" min="200" max="1800" step="50" value="800"><label>Força <span id="fv">1.0</span></label><input id="force" type="range" min=".3" max="2.2" step=".1" value="1"><label>Fundo</label><div id="sw"></div><div class="row"><button class="act" id="clear">LIMPAR</button><button class="act" id="reset">REINICIAR</button></div></div></div>
+<button id="boom">⚡ DETONAR</button><div id="hint">mova o mouse ou toque para controlar</div>
+
+<script>
+"use strict";
+const B=[["#05060a",1],["#100620",1],["#001418",1],["#170608",1],["#eceef3",0]];
+const c=document.querySelector("#c"),x=c.getContext("2d",{alpha:false});let W,H,D=1,bgi=0;
+const v={x:0,y:0},t={x:0,y:0};let ps=[],en=[],waves=[],count=800,force=1,active=false,playing=false,paused=false;
+let score=0,best=+localStorage.vorticeBest||0,lives=3,time=0,charge=0,ready=false,flash=0,shake=0,hue=205,spawn=0;
+const $=q=>document.querySelector(q), ui={score:$("#score"),time:$("#time"),life:$("#life")};
+function size(){D=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;c.style.width=W+"px";c.style.height=H+"px";x.setTransform(D,0,0,D,0,0)}addEventListener("resize",size);size();
+function P(){let p={x:Math.random()*W,y:Math.random()*H,px:0,py:0,vx:0,vy:0,j:.7+Math.random()*.6,h:200};p.px=p.x;p.py=p.y;return p}
+function resp(p){let a=Math.random()*6.28,r=Math.max(W,H)*(.7+Math.random()*.3);p.x=v.x+Math.cos(a)*r;p.y=v.y+Math.sin(a)*r;p.px=p.x;p.py=p.y;p.vx=p.vy=0}
+function init(){ps=Array.from({length:count},P)}
+function setCount(n){count=n;while(ps.length<n)ps.push(P());ps.length=n}
+function spawnEnemy(n=1){let R=Math.max(W,H)*.72;for(let i=0;i<n;i++){let a=Math.random()*6.28,s=350+Math.random()*130,X=v.x+Math.cos(a)*R,Y=v.y+Math.sin(a)*R;en.push({x:X,y:Y,px:X,py:Y,vx:-Math.cos(a)*s,vy:-Math.sin(a)*s,s,life:0})}}
+function hit(){lives--;flash=1;shake=24;hud();if(lives<=0)end()}
+function add(n){score+=n;if(score>best){best=score;localStorage.vorticeBest=best}hud()}
+function hud(){ui.score.textContent=score.toLocaleString("pt-BR");ui.life.textContent=("● ".repeat(lives)+"○ ".repeat(3-lives)).trim();let s=Math.floor(time);ui.time.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");$("#best0").textContent=best.toLocaleString("pt-BR")}
+function start(){playing=true;paused=false;score=0;lives=3;time=0;charge=0;ready=false;en=[];waves=[];v.x=W/2;v.y=H/2;t.x=v.x;t.y=v.y;init();$("#boom").classList.remove("show");$("#start").classList.add("hidden");$("#over").classList.add("hidden");$("#pauseScreen").classList.add("hidden");hud()}
+function end(){playing=false;$("#final").textContent=score.toLocaleString("pt-BR");$("#best1").textContent=best.toLocaleString("pt-BR");$("#tm1").textContent=Math.floor(time)+"s";$("#over").classList.remove("hidden");$("#boom").classList.remove("show")}
+function detonate(){if(!ready)return;ready=false;charge=0;$("#boom").classList.remove("show");let R=Math.max(W,H);for(let p of ps){let dx=p.x-v.x,dy=p.y-v.y,d=Math.hypot(dx,dy)||1,q=500+1700*(1-Math.min(1,d/(R*.9)));p.vx+=dx/d*q;p.vy+=dy/d*q}waves.push({r:5,m:R*.95,a:1},{r:2,m:R*.55,a:1});spawnEnemy(4);add(50);flash=.9;shake=28}
+$("#boom").onclick=detonate;
+function update(dt){if(!playing||paused)return;time+=dt;hue=(hue+dt*6)%360;
+if(!active){t.x=W/2+Math.cos(time*.35)*W*.2;t.y=H/2+Math.sin(time*.52)*H*.16}let k=1-Math.exp(-26*dt);v.x+=(t.x-v.x)*k;v.y+=(t.y-v.y)*k;
+charge+=dt;if(!ready&&charge>20){ready=true;charge=0;$("#boom").classList.add("show")}spawn+=dt;if(spawn>Math.max(2.2,6-time*.04)){spawn=0;spawnEnemy(1+Math.floor(Math.min(2,time/35)))}
+for(let p of ps){p.px=p.x;p.py=p.y;let dx=p.x-v.x,dy=p.y-v.y,d=Math.hypot(dx,dy)||1,ux=dx/d,uy=dy/d,tx=-uy,ty=ux,q=force*190000/(d+600),z=force*(200+95000/(d+300))*p.j;p.vx+=( -ux*q+tx*z-p.vx)*(1-Math.exp(-3.4*dt));p.vy+=( -uy*q+ty*z-p.vy)*(1-Math.exp(-3.4*dt));p.x+=p.vx*dt;p.y+=p.vy*dt;p.h=hue+Math.atan2(uy,ux)*50+Math.hypot(p.vx,p.vy)*.1;if(d<9||p.x<-W*.7||p.x>W*1.7||p.y<-H*.7||p.y>H*1.7)resp(p)}
+for(let q of en){q.px=q.x;q.py=q.y;q.life+=dt;let dx=v.x-q.x,dy=v.y-q.y,d=Math.hypot(dx,dy)||1,want=Math.atan2(dy,dx),cur=Math.atan2(q.vy,q.vx),dif=want-cur;while(dif>Math.PI)dif-=6.28;while(dif<-Math.PI)dif+=6.28;let a=cur+Math.max(-2*dt,Math.min(2*dt,dif));q.vx=Math.cos(a)*q.s;q.vy=Math.sin(a)*q.s;q.x+=q.vx*dt;q.y+=q.vy*dt;if(d<27){q.life=99;hit()}if(q.life>12)q.life=99}en=en.filter(q=>q.life<12);
+for(let w of waves){w.r+=(w.m-w.r)*(1-Math.exp(-2.4*dt));w.a-=dt*1.15}waves=waves.filter(w=>w.a>0);flash*=Math.exp(-4.5*dt);shake*=Math.exp(-6.5*dt);hud()}
+function render(){let bg=B[bgi],dark=bg[1];x.globalCompositeOperation="source-over";x.globalAlpha=1;x.fillStyle=dark?bg[0]:"rgba(236,238,243,.2)";x.fillRect(0,0,W,H);x.save();if(shake>.3)x.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);x.globalCompositeOperation=dark?"lighter":"source-over";
+let g=x.createRadialGradient(v.x,v.y,0,v.x,v.y,82);g.addColorStop(0,dark?"#ffffffdd":"#1e123cdd");g.addColorStop(.18,dark?"#aacdff88":"#50329666");g.addColorStop(1,"transparent");x.fillStyle=g;x.beginPath();x.arc(v.x,v.y,82,0,6.28);x.fill();
+x.lineCap="round";x.lineWidth=1.6;x.globalAlpha=dark?.58:.35;for(let p of ps){x.strokeStyle=`hsl(${p.h},100%,${dark?62:36}%)`;x.beginPath();x.moveTo(p.px,p.py);x.lineTo(p.x,p.y);x.stroke()}x.globalAlpha=1;
+for(let w of waves){x.strokeStyle=`rgba(200,150,255,${w.a})`;x.lineWidth=3+14*w.a;x.beginPath();x.arc(v.x,v.y,w.r,0,6.28);x.stroke()}
+for(let q of en){let a=Math.min(1,(12-q.life)/1.2);x.strokeStyle=`rgba(195,115,255,${a})`;x.lineWidth=3;x.beginPath();x.moveTo(q.px,q.py);x.lineTo(q.x,q.y);x.stroke();let z=x.createRadialGradient(q.x,q.y,0,q.x,q.y,25);z.addColorStop(0,`rgba(255,235,255,${a})`);z.addColorStop(.2,`rgba(200,110,255,${a})`);z.addColorStop(1,"transparent");x.fillStyle=z;x.beginPath();x.arc(q.x,q.y,25,0,6.28);x.fill()}x.restore();if(flash>.01){x.globalAlpha=Math.min(.4,flash*.3);x.fillStyle="#a06cff";x.fillRect(0,0,W,H);x.globalAlpha=1}}
+let last=performance.now();function loop(n){let dt=Math.min(.033,(n-last)/1000);last=n;update(dt);render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function pointer(a,b){t.x=a;t.y=b;active=true}addEventListener("mousemove",e=>pointer(e.clientX,e.clientY));addEventListener("touchstart",e=>pointer(e.touches[0].clientX,e.touches[0].clientY),{passive:false});addEventListener("touchmove",e=>pointer(e.touches[0].clientX,e.touches[0].clientY),{passive:false});
+$("#play").onclick=start;$("#again").onclick=start;$("#pause").onclick=()=>{if(playing){paused=!paused;$("#pauseScreen").classList.toggle("hidden",!paused)}};$("#resume").onclick=()=>{paused=false;$("#pauseScreen").classList.add("hidden")};
+$("#home").onclick=$("#home2").onclick=()=>{playing=false;paused=false;$("#over").classList.add("hidden");$("#pauseScreen").classList.add("hidden");$("#start").classList.remove("hidden")};
+$("#reset").onclick=start;$("#clear").onclick=()=>{ps=[];count=0;$("#count").value=0;$("#cv").textContent=0};
+$("#count").oninput=e=>{setCount(+e.target.value);$("#cv").textContent=e.target.value};$("#force").oninput=e=>{force=+e.target.value;$("#fv").textContent=force.toFixed(1)};
+$("#tog").onclick=()=>{$("#panel").classList.toggle("collapsed");$("#tog").textContent=$("#panel").classList.contains("collapsed")?"+":"–"};
+B.forEach((b,i)=>{let s=document.createElement("button");s.className="s";s.style.background=b[0];s.onclick=()=>{bgi=i;document.querySelectorAll(".s").forEach(z=>z.classList.remove("active"));s.classList.add("active")};if(!i)s.classList.add("active");$("#sw").appendChild(s)});
+$("#best0").textContent=best.toLocaleString("pt-BR");
+</script></body></html>
